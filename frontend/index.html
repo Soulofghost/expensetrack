@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExpenseTrack | Multi-Currency Expense & Budget Management</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h2>ExpenseTrack</h2>
+          <span class="badge-audit">AUDIT DESK v1.0</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-item active" data-tab="ledger">
+          <span class="icon">📑</span> Expense Ledger
+        </button>
+        <button class="nav-item" data-tab="budgets">
+          <span class="icon">📊</span> Budget Pacing
+        </button>
+        <button class="nav-item" data-tab="analytics">
+          <span class="icon">📈</span> Analytics
+        </button>
+      </nav>
+
+      <!-- Quick FX Converter Widget -->
+      <div class="sidebar-widget">
+        <div class="widget-header">
+          <h4>💱 Instant FX Calculator</h4>
+        </div>
+        <div class="fx-form">
+          <div class="input-row">
+            <input type="number" id="fxCalcAmount" value="1000" min="1" step="any">
+            <select id="fxCalcFrom">
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="JPY" selected>JPY</option>
+              <option value="CAD">CAD</option>
+              <option value="AUD">AUD</option>
+              <option value="CHF">CHF</option>
+              <option value="INR">INR</option>
+              <option value="SGD">SGD</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div class="fx-result" id="fxCalcResult">
+            = $6.67 USD
+          </div>
+        </div>
+      </div>
+
+      <div class="system-status">
+        <div class="status-indicator"></div>
+        <span>Institutional Feed Active</span>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="top-bar">
+        <div class="page-title">
+          <h1 id="pageHeading">Expense Ledger</h1>
+          <p id="pageSubheading">Multi-currency disbursement, voucher tracking, and approval workflow</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" id="refreshBtn">↻ Refresh</button>
+          <button class="btn btn-primary" id="openNewExpenseModal">+ New Expense</button>
+        </div>
+      </header>
+
+      <!-- KPI Metrics Strip -->
+      <section class="kpi-strip">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Spend (USD)</span>
+          <span class="kpi-value text-emerald" id="kpiTotalSpend">$0.00</span>
+          <span class="kpi-hint">Authorized disbursements</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Active Records</span>
+          <span class="kpi-value" id="kpiRecordCount">0</span>
+          <span class="kpi-hint">Current fiscal period</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Pending Approval</span>
+          <span class="kpi-value text-amber" id="kpiPendingCount">0</span>
+          <span class="kpi-hint">Awaiting review</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Budget Overruns</span>
+          <span class="kpi-value text-crimson" id="kpiOverrunCount">0</span>
+          <span class="kpi-hint">Exceeded categories</span>
+        </div>
+      </section>
+
+      <!-- TAB 1: LEDGER -->
+      <section class="tab-pane active" id="tabLedger">
+        <!-- Filter Controls -->
+        <div class="filter-bar">
+          <div class="search-box">
+            <input type="text" id="ledgerSearch" placeholder="Search title, merchant, invoice #...">
+          </div>
+          <div class="filter-group">
+            <select id="filterCategory">
+              <option value="">All Categories</option>
+              <option value="Software & SaaS">Software & SaaS</option>
+              <option value="Travel & Transit">Travel & Transit</option>
+              <option value="Client Meals">Client Meals</option>
+              <option value="Equipment & Hardware">Equipment & Hardware</option>
+              <option value="Marketing & Ads">Marketing & Ads</option>
+              <option value="Office Supplies">Office Supplies</option>
+            </select>
+            <select id="filterStatus">
+              <option value="">All Statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="SUBMITTED">Submitted</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REIMBURSED">Reimbursed</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Expense Table -->
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Expense & Merchant</th>
+                <th>Category</th>
+                <th>Amount (Original)</th>
+                <th>Amount (USD Base)</th>
+                <th>Status</th>
+                <th>Receipt / Ref</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expenseTableBody">
+              <tr>
+                <td colspan="8" class="text-center text-muted">Loading ledger entries...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 2: BUDGETS -->
+      <section class="tab-pane" id="tabBudgets">
+        <div class="section-desc">
+          <h3>Category Budget Pacing</h3>
+          <p>Real-time monthly burn rate and overage threshold monitoring.</p>
+        </div>
+        <div class="budget-grid" id="budgetGrid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TAB 3: ANALYTICS -->
+      <section class="tab-pane" id="tabAnalytics">
+        <div class="section-desc">
+          <h3>Expenditure & Currency Breakdown</h3>
+          <p>Institutional spending distribution across operational expense centers.</p>
+        </div>
+        <div class="analytics-layout">
+          <div class="analytics-card">
+            <h4>Spend by Category (USD)</h4>
+            <div id="categorySpendBars" class="breakdown-bars"></div>
+          </div>
+          <div class="analytics-card">
+            <h4>Spend by Currency</h4>
+            <div id="currencyBreakdown" class="currency-pills"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Record Expense -->
+  <div class="modal-backdrop" id="newExpenseModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Record Business Expense</h3>
+        <button class="close-btn" id="closeExpenseModal">&times;</button>
+      </div>
+      <form id="newExpenseForm">
+        <div class="form-group">
+          <label>Expense Title / Description *</label>
+          <input type="text" id="expTitle" required placeholder="e.g. AWS Production Database Hosting">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="expCategory" required>
+              <option value="Software & SaaS">Software & SaaS</option>
+              <option value="Travel & Transit">Travel & Transit</option>
+              <option value="Client Meals">Client Meals</option>
+              <option value="Equipment & Hardware">Equipment & Hardware</option>
+              <option value="Marketing & Ads">Marketing & Ads</option>
+              <option value="Office Supplies">Office Supplies</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Merchant / Vendor *</label>
+            <input type="text" id="expMerchant" required placeholder="e.g. Amazon Web Services">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount *</label>
+            <input type="number" id="expAmount" step="0.01" min="0.01" required placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Currency *</label>
+            <select id="expCurrency" required>
+              <option value="USD" selected>USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="CAD">CAD ($)</option>
+              <option value="AUD">AUD ($)</option>
+              <option value="CHF">CHF (Fr)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="SGD">SGD ($)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Real-time USD conversion preview -->
+        <div class="conversion-preview" id="conversionPreview">
+          <span>Base USD Equivalent:</span> <strong id="previewAmountUsd">$0.00 USD</strong>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Expense Date</label>
+            <input type="date" id="expDate">
+          </div>
+          <div class="form-group">
+            <label>Receipt / Voucher Ref</label>
+            <input type="text" id="expReceiptRef" placeholder="e.g. INV-2026-9921">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tax Amount (VAT / GST included)</label>
+          <input type="number" id="expTax" step="0.01" min="0" value="0.00">
+        </div>
+
+        <div class="form-group">
+          <label>Notes / Purpose</label>
+          <textarea id="expNotes" rows="2" placeholder="Business justification, project code, or client meeting details..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelExpenseModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveExpenseBtn">Save Draft Voucher</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Audit Trail / Detail -->
+  <div class="modal-backdrop" id="auditModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="auditModalTitle">Expense Audit Trail</h3>
+        <button class="close-btn" id="closeAuditModal">&times;</button>
+      </div>
+      <div class="audit-modal-body" id="auditModalBody">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="closeAuditBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
